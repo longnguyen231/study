@@ -10,6 +10,7 @@ import (
 )
 
 func CreateUser(c echo.Context) error {
+	db := connect.GetDB()
 
 	u := new(models.User)
 
@@ -18,11 +19,6 @@ func CreateUser(c echo.Context) error {
 		return err
 	}
 
-	db, err := connect.ConnectData()
-	if err != nil {
-		log.Print(23)
-		panic(err.Error())
-	}
 	insert, err := db.Prepare("insert into users(Id,Name,Age,home_town) values (?,?,?,?)")
 	if err != nil {
 		log.Print(4)
@@ -36,11 +32,8 @@ func CreateUser(c echo.Context) error {
 	return c.JSON(http.StatusCreated, u)
 }
 func GetUser(c echo.Context) error {
-	db, err := connect.ConnectData()
-	if err != nil {
-		log.Print(44)
-		panic(err.Error())
-	}
+	db := connect.GetDB()
+
 	var list = []models.User{}
 	result, err := db.Query("select * from users  ")
 	if err != nil {
@@ -67,12 +60,8 @@ func UpdateUser(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
 
-	db, err := connect.ConnectData()
-	if err != nil {
-		log.Print(74)
-		panic(err.Error())
-	}
-	defer db.Close()
+	db := connect.GetDB()
+
 	_, err = db.Exec("update users set Name=?,Age=?,home_town=? where id=?", u.Name, u.Age, u.Hometown, u.Id)
 	if err != nil {
 		log.Print(79)
@@ -87,12 +76,9 @@ func DeleteUser(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
 
-	db, err := connect.ConnectData()
+	db := connect.GetDB()
 
-	if err != nil {
-		log.Print(86)
-		panic(err.Error())
-	}
+
 	_, err = db.Exec("DELETE FROM users WHERE id = ?", u.Id)
 	if err != nil {
 		log.Print(91)
