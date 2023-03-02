@@ -2,11 +2,13 @@ package users
 
 import (
 	_ "github.com/go-sql-driver/mysql"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
 	"projecttest/connect"
 	"projecttest/models"
+	"time"
 )
 
 func CreateUser(c echo.Context) error {
@@ -78,11 +80,44 @@ func DeleteUser(c echo.Context) error {
 
 	db := connect.GetDB()
 
-
 	_, err = db.Exec("DELETE FROM users WHERE id = ?", u.Id)
 	if err != nil {
 		log.Print(91)
 		panic(err.Error())
 	}
 	return c.JSON(200, "delete succesful")
+}
+func Login(c echo.Context) error {
+	u := new(models.Authen)
+	err := c.Bind(u)
+	if err != nil {
+		log.Print(92)
+		panic(err.Error())
+	}
+
+	db := connect.GetDB()
+	var pwd string
+	err = db.QueryRow("select password from authen where username =?", u.Username).Scan(&pwd)
+	if err != nil {
+		log.Print(98)
+		panic(err.Error())
+	}
+
+	if pwd == u.Password {
+		claims := &models.JwtCustomClaims{
+			Username: u.Username,
+			Password: true,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte("mysecretkey"))
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{"token": tokenString})
+	}
+	return nil
 }
