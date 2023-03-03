@@ -5,21 +5,21 @@ import (
 	"log"
 )
 
-type DB struct {
+type DBSql struct {
 	db *sql.DB
 }
 
-var db *DB
+var dbSql *sql.DB
 
-func (d *DB) New() {
-	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/users")
+func (d *DBSql) New() {
+	dbConnect, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/users")
 	if err != nil {
 		log.Print(3)
 		panic(err.Error())
 	}
-	d.db = db
+	dbSql = dbConnect
 }
 
 func GetDB() *sql.DB {
-	return db.db
+	return dbSql
 }

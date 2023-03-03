@@ -108,7 +108,7 @@ func Login(c echo.Context) error {
 			Username: u.Username,
 			Password: true,
 			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 20)),
 			},
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
