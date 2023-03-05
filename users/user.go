@@ -121,3 +121,8 @@ func Login(c echo.Context) error {
 	}
 	return nil
 }
+func Protected(c echo.Context) error {
+
+	user := c.Get("user")
+	return c.JSON(200, user)
+}
