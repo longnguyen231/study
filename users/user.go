@@ -1,6 +1,8 @@
 package users
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	_ "github.com/go-sql-driver/mysql"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -11,6 +13,10 @@ import (
 	"time"
 )
 
+func md5Hash(string string) string {
+	hash := md5.Sum([]byte(string))
+	return hex.EncodeToString(hash[:])
+}
 func CreateUser(c echo.Context) error {
 	db := connect.GetDB()
 
@@ -21,15 +27,16 @@ func CreateUser(c echo.Context) error {
 		return err
 	}
 
-	insert, err := db.Prepare("insert into users(Id,Name,Age,home_town) values (?,?,?,?)")
+	passwordHex := md5Hash(u.Password)
+	insert, err := db.Prepare("insert into users(Id,Name,Age,home_town,Password,Username) values (?,?,?,?,?,?)")
 	if err != nil {
 		log.Print(4)
 		panic(err.Error())
 	}
-	_, err = insert.Exec(u.Id, u.Name, u.Age, u.Hometown)
+	_, err = insert.Exec(u.Id, u.Name, u.Age, u.Hometown, passwordHex, u.Username)
 	if err != nil {
 		log.Print(5)
-		panic(err.Error())
+		log.Print(err.Error())
 	}
 	return c.JSON(http.StatusCreated, u)
 }
@@ -37,9 +44,10 @@ func GetUser(c echo.Context) error {
 	db := connect.GetDB()
 
 	var list = []models.User{}
+
 	result, err := db.Query("select * from users  ")
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err.Error())
 
 	}
 	for result.Next() {
@@ -47,11 +55,13 @@ func GetUser(c echo.Context) error {
 		var Name string
 		var Age int
 		var Hometown string
-		var err = result.Scan(&Id, &Name, &Age, &Hometown)
+		var Username string
+		var Password string
+		var err = result.Scan(&Id, &Name, &Age, &Hometown, &Username, &Password)
 		if err != nil {
 			log.Fatal(err)
 		}
-		list = append(list, models.User{Id, Name, Age, Hometown})
+		list = append(list, models.User{})
 	}
 	return c.JSON(http.StatusOK, list)
 }
@@ -63,8 +73,9 @@ func UpdateUser(c echo.Context) error {
 	}
 
 	db := connect.GetDB()
+	passwordHex := md5Hash(u.Password)
 
-	_, err = db.Exec("update users set Name=?,Age=?,home_town=? where id=?", u.Name, u.Age, u.Hometown, u.Id)
+	_, err = db.Exec("update users set Name=?,Age=?,home_town=?,password=?,username=? where id=?", u.Name, u.Age, u.Hometown, passwordHex, u.Username, u.Id)
 	if err != nil {
 		log.Print(79)
 		panic(err.Error())
@@ -88,7 +99,7 @@ func DeleteUser(c echo.Context) error {
 	return c.JSON(200, "delete succesful")
 }
 func Login(c echo.Context) error {
-	u := new(models.Authen)
+	u := new(models.User)
 	err := c.Bind(u)
 	if err != nil {
 		log.Print(92)
@@ -97,7 +108,7 @@ func Login(c echo.Context) error {
 
 	db := connect.GetDB()
 	var pwd string
-	err = db.QueryRow("select password from authen where username =?", u.Username).Scan(&pwd)
+	err = db.QueryRow("select password from users where username =?", u.Username).Scan(&pwd)
 	if err != nil {
 		log.Print(98)
 		panic(err.Error())

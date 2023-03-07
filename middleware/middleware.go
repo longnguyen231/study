@@ -40,19 +40,15 @@ func VerifyJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		// Kiểm tra token
 		claims, ok := token.Claims.(*models.JwtCustomClaims)
 		log.Print("eroo", token.Claims)
+
 		if ok && token.Valid {
 			db := connect.GetDB()
-			_, err := db.Exec("insert into users name values (?)", claims.Username)
-			if err != nil {
-				log.Print(err.Error())
-			}
 			var user = &models.User{}
-			err = db.QueryRow("select * from users where username =?", claims.Username).Scan(*user)
+			err = db.QueryRow("select id,name from users where username =?", claims.Username).Scan(&user.Id, &user.Name)
 			if err != nil {
 				log.Print(98)
 				log.Print(err.Error())
 			}
-
 			c.Set("user", user)
 			return next(c)
 		} else {
