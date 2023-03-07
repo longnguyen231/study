@@ -17,9 +17,9 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
-	e.GET("user", users.GetUser)
-	e.POST("create", users.CreateUser)
-	e.PUT("update/id", users.UpdateUser)
+	e.GET("/user", users.GetUser)
+	e.POST("/create", users.CreateUser)
+	e.PUT("/update/id", users.UpdateUser)
 	e.DELETE("/delete", users.DeleteUser)
 	e.GET("/login", users.Login)
 	e.GET("/protected", users.Protected, middleware.VerifyJWT)

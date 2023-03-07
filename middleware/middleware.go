@@ -44,7 +44,7 @@ func VerifyJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		if ok && token.Valid {
 			db := connect.GetDB()
 			var user = &models.User{}
-			err = db.QueryRow("select id,name from users where username =?", claims.Username).Scan(&user.Id, &user.Name)
+			err = db.QueryRow("select id,name,age,home_town,password,username from users where username =?", claims.Username).Scan(&user.Id, &user.Name, &user.Age, &user.Hometown, &user.Password, &user.Username)
 			if err != nil {
 				log.Print(98)
 				log.Print(err.Error())

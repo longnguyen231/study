@@ -30,38 +30,32 @@ func CreateUser(c echo.Context) error {
 	passwordHex := md5Hash(u.Password)
 	insert, err := db.Prepare("insert into users(Id,Name,Age,home_town,Password,Username) values (?,?,?,?,?,?)")
 	if err != nil {
-		log.Print(4)
-		panic(err.Error())
+		log.Print(err.Error())
 	}
 	_, err = insert.Exec(u.Id, u.Name, u.Age, u.Hometown, passwordHex, u.Username)
 	if err != nil {
-		log.Print(5)
 		log.Print(err.Error())
 	}
 	return c.JSON(http.StatusCreated, u)
 }
 func GetUser(c echo.Context) error {
 	db := connect.GetDB()
-
 	var list = []models.User{}
-
 	result, err := db.Query("select * from users  ")
 	if err != nil {
 		log.Print(err.Error())
-
 	}
+
 	for result.Next() {
-		var Id int
-		var Name string
-		var Age int
-		var Hometown string
-		var Username string
-		var Password string
-		var err = result.Scan(&Id, &Name, &Age, &Hometown, &Username, &Password)
+		var user models.User
+
+		err = result.Scan(&user.Id, &user.Name, &user.Age, &user.Hometown, &user.Password, &user.Username)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err.Error())
 		}
-		list = append(list, models.User{})
+		passwordHex := md5Hash(user.Password)
+		user.Password = passwordHex
+		list = append(list, user)
 	}
 	return c.JSON(http.StatusOK, list)
 }
@@ -77,8 +71,7 @@ func UpdateUser(c echo.Context) error {
 
 	_, err = db.Exec("update users set Name=?,Age=?,home_town=?,password=?,username=? where id=?", u.Name, u.Age, u.Hometown, passwordHex, u.Username, u.Id)
 	if err != nil {
-		log.Print(79)
-		panic(err.Error())
+		log.Print(err.Error())
 	}
 	return c.JSON(http.StatusOK, u)
 }
@@ -93,28 +86,27 @@ func DeleteUser(c echo.Context) error {
 
 	_, err = db.Exec("DELETE FROM users WHERE id = ?", u.Id)
 	if err != nil {
-		log.Print(91)
-		panic(err.Error())
+		log.Print(err.Error())
 	}
 	return c.JSON(200, "delete succesful")
 }
 func Login(c echo.Context) error {
+	db := connect.GetDB()
 	u := new(models.User)
 	err := c.Bind(u)
 	if err != nil {
-		log.Print(92)
-		panic(err.Error())
+		log.Print(err.Error())
 	}
 
-	db := connect.GetDB()
+	passwordHex := md5Hash(u.Password)
+
 	var pwd string
 	err = db.QueryRow("select password from users where username =?", u.Username).Scan(&pwd)
 	if err != nil {
-		log.Print(98)
-		panic(err.Error())
+		log.Print(err.Error())
 	}
 
-	if pwd == u.Password {
+	if pwd == passwordHex {
 		claims := &models.JwtCustomClaims{
 			Username: u.Username,
 			Password: true,
@@ -130,7 +122,7 @@ func Login(c echo.Context) error {
 
 		return c.JSON(http.StatusOK, echo.Map{"token": tokenString})
 	}
-	return nil
+	return c.String(http.StatusUnauthorized, "sai mật khẩu hoặc username")
 }
 func Protected(c echo.Context) error {
 
